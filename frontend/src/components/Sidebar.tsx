@@ -1,4 +1,5 @@
-import { LayoutDashboard, Users, BarChart3, Settings, X } from 'lucide-react';
+import { LayoutDashboard, Users, BarChart3, Settings, ClipboardList, X } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { Role } from '../types';
 
 interface SidebarProps {
@@ -8,12 +9,26 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, currentRole }) => {
-  const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', href: '#' },
-    { icon: Users, label: currentRole === 'hr' ? 'Departments' : currentRole === 'manager' ? 'Team' : 'Profile', href: '#' },
-    { icon: BarChart3, label: 'Analytics', href: '#' },
-    { icon: Settings, label: 'Settings', href: '#' },
-  ];
+  const location = useLocation();
+
+  const getMenuItems = () => {
+    const items = [
+      { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
+    ];
+
+    if (currentRole === 'hr') {
+      items.push({ icon: Users, label: 'Departments', href: '/departments' });
+    } else if (currentRole === 'manager') {
+      items.push({ icon: Users, label: 'Team', href: '#' });
+    } else if (currentRole === 'employee') {
+      items.push({ icon: ClipboardList, label: 'Questionnaire', href: '/questionnaire' });
+      items.push({ icon: Users, label: 'Profile', href: '/profile' });
+    }
+
+    return items;
+  };
+
+  const menuItems = getMenuItems();
 
   return (
     <>
@@ -27,7 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, currentRole }
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -51,11 +66,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, currentRole }
           <nav className="flex-1 p-4 space-y-1">
             {menuItems.map((item, index) => {
               const Icon = item.icon;
-              const isActive = index === 0;
+              const isActive = location.pathname === item.href;
               return (
-                <a
+                <Link
                   key={index}
-                  href={item.href}
+                  to={item.href}
+                  onClick={onClose}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                     isActive
                       ? 'bg-primary-50 text-primary-600 font-medium'
@@ -64,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, currentRole }
                 >
                   <Icon className="w-5 h-5" />
                   <span>{item.label}</span>
-                </a>
+                </Link>
               );
             })}
           </nav>

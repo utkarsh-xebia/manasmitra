@@ -51,3 +51,18 @@ export interface WellbeingProgram {
   enrolled: boolean;
   startDate?: string;
 }
+
+export interface MentalHealthResult {
+  _id: string;
+  userId: string;
+  severityLabel: 'Minimal' | 'Mild' | 'Moderate' | 'Moderately Severe' | 'Severe';
+  confidenceScore: number;
+  totalScore: number;
+  stressLevel: number;
+  moodScore: number;
+  workLifeBalance: number;
+  recommendations: string[];
+  modelUsed: string;
+  createdAt: string;
+  updatedAt: string;
+}

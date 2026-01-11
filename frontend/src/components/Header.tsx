@@ -1,14 +1,30 @@
+import { useState, useEffect } from 'react';
 import { Search, Bell, User, Menu } from 'lucide-react';
-import { RoleSwitcher } from './RoleSwitcher';
 import { Role } from '../types';
+import { useSearch } from '../context/SearchContext';
 
 interface HeaderProps {
   currentRole: Role;
-  onRoleChange: (role: Role) => void;
   onMenuClick?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ currentRole, onRoleChange, onMenuClick }) => {
+export const Header: React.FC<HeaderProps> = ({ currentRole, onMenuClick }) => {
+  const userDataString = localStorage.getItem('userData');
+  const userData = userDataString ? JSON.parse(userDataString) : null;
+  const userName = userData ? userData.name : 'User';
+  
+  const { searchQuery, setSearchQuery } = useSearch();
+  const [inputValue, setInputValue] = useState(searchQuery);
+
+  // Debounce search query update
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(inputValue);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [inputValue, setSearchQuery]);
+
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
       <div className="flex items-center justify-between">
@@ -25,14 +41,15 @@ export const Header: React.FC<HeaderProps> = ({ currentRole, onRoleChange, onMen
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search name, role, dept..."
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent w-64"
               />
             </div>
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <RoleSwitcher currentRole={currentRole} onRoleChange={onRoleChange} />
           <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <Bell className="w-6 h-6 text-gray-600" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -41,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({ currentRole, onRoleChange, onMen
             <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
               <User className="w-5 h-5 text-white" />
             </div>
-            <span className="hidden md:block text-sm font-medium text-gray-700">John Doe</span>
+            <span className="hidden md:block text-sm font-medium text-gray-700">{userName}</span>
           </button>
         </div>
       </div>

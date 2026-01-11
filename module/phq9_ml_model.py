@@ -1,6 +1,9 @@
 """
 PHQ-9 Mental Health Assessment ML Model
 Machine Learning Model for assessing mental health wellbeing using PHQ-9 Questionnaire
+
+Python version: 3.10
+scikit-learn version: 1.7.2
 """
 
 import pandas as pd
