@@ -12,6 +12,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
+import joblib
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -456,6 +457,38 @@ print(f"{'='*80}")
 # Store the best model as the main model for predictions
 model = best_model
 model_scaler = best_scaler
+
+# ============================================================================
+# Save the Best Model using Joblib
+# ============================================================================
+print("\n" + "=" * 80)
+print("Saving Best Model with Joblib")
+print("=" * 80)
+
+# Create a dictionary with all necessary components for prediction
+model_package = {
+    'model': best_model,
+    'scaler': best_scaler,
+    'severity_label_encoder': severity_label_encoder,
+    'label_encoders': label_encoders,
+    'feature_column_names': feature_column_names,
+    'phq_question_columns': phq_question_columns,
+    'model_name': best_model_name,
+    'accuracy': results_df.iloc[0]['Accuracy']
+}
+
+# Save the model package
+model_filename = 'phq9_best_model.joblib'
+joblib.dump(model_package, model_filename)
+print(f"\nModel saved successfully to: {model_filename}")
+print(f"Saved components:")
+print(f"  - Model: {best_model_name}")
+print(f"  - Scaler: {'Yes' if best_scaler is not None else 'No'}")
+print(f"  - Severity Label Encoder: Yes")
+print(f"  - Label Encoders: Yes")
+print(f"  - Feature Column Names: Yes")
+print(f"  - PHQ Question Columns: Yes")
+print(f"  - Model Accuracy: {results_df.iloc[0]['Accuracy']:.4f} ({results_df.iloc[0]['Accuracy']*100:.2f}%)")
 
 # Print feature importance if available (for tree-based models)
 if hasattr(model, 'feature_importances_'):

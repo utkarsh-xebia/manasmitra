@@ -280,3 +280,83 @@ Update the PROMPT_LOG.md with the complete prompt (this one) → change made →
   - Strong performance across all severity levels
 
 The improved model demonstrates significantly better performance, making it more reliable for real-world mental health assessment applications. The comprehensive model comparison framework ensures that the best model is always selected, and the ensemble methods provide robust alternatives for production deployment.
+
+---
+
+## Entry 3: Save Best Model with Joblib
+
+### Complete Prompt
+
+Save the model with the highest accuracy using Joblib and save (download) it in the project directory.
+
+Update the PROMPT_LOG.md with the complete prompt (this one) → change made → impact/result.
+
+### Changes Made
+
+1. **Added Joblib Import**:
+   - Imported `joblib` library at the top of the script for model serialization
+   - Joblib is the recommended library for saving scikit-learn models (more efficient than pickle for NumPy arrays)
+
+2. **Created Model Package Dictionary**:
+   - Created a comprehensive `model_package` dictionary containing all necessary components for prediction:
+     - `model`: The best performing model (highest accuracy)
+     - `scaler`: StandardScaler instance (if model requires scaling, e.g., Logistic Regression, SVM, KNN)
+     - `severity_label_encoder`: LabelEncoder for converting numeric predictions back to severity labels
+     - `label_encoders`: Dictionary of label encoders (e.g., Gender encoder)
+     - `feature_column_names`: List of feature column names in correct order for prediction
+     - `phq_question_columns`: List of PHQ-9 question column names for encoding user responses
+     - `model_name`: Name of the best model (e.g., "Logistic Regression")
+     - `accuracy`: Accuracy score of the saved model for reference
+
+3. **Model Serialization**:
+   - Saved the complete model package to `phq9_best_model.joblib` in the project directory
+   - Added informative console output showing:
+     - Model filename
+     - Which components were saved
+     - Model name and accuracy
+
+4. **Model Saving Location**:
+   - Model saved in the project root directory: `phq9_best_model.joblib`
+   - File is ready for deployment and can be loaded in other scripts or production environments
+
+### Impact/Result
+
+- **Model Persistence**: The best performing model (highest accuracy) is now saved and can be reused without retraining
+  - **Best Model Saved**: Logistic Regression with 94.16% accuracy (as of Entry 2)
+  - **File Location**: `phq9_best_model.joblib` in the project directory
+  - **File Size**: Efficient serialization using Joblib (optimized for NumPy arrays and scikit-learn models)
+
+- **Complete Model Package**: All necessary components for prediction are saved together:
+  - Model itself for making predictions
+  - Scaler for feature normalization (if required)
+  - Label encoders for proper encoding/decoding
+  - Feature metadata for ensuring correct input format
+  - Model metadata (name, accuracy) for reference
+
+- **Production Deployment Ready**:
+  - Model can be loaded in production environments using: `joblib.load('phq9_best_model.joblib')`
+  - All preprocessing components are included, ensuring consistent predictions
+  - No need to retrain or re-run the entire pipeline when deploying
+  - Can be easily integrated into API endpoints or microservices
+
+- **Model Versioning**: 
+  - Saved model includes accuracy metric, allowing for easy comparison with future model versions
+  - Model name is stored, making it clear which algorithm was used
+
+- **Workflow Benefits**:
+  - Separates model training (one-time) from model usage (frequent)
+  - Reduces computational overhead in production (no need to retrain)
+  - Enables model sharing across different scripts or team members
+  - Facilitates model deployment to cloud services or containerized applications
+
+- **Usage Example**:
+  ```python
+  # Load the saved model
+  model_package = joblib.load('phq9_best_model.joblib')
+  model = model_package['model']
+  scaler = model_package['scaler']
+  severity_encoder = model_package['severity_label_encoder']
+  # Use for predictions...
+  ```
+
+The model is now saved and ready for deployment, making it easy to use the best performing model in production environments without needing to retrain or run the entire pipeline.
