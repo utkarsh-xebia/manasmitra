@@ -565,3 +565,250 @@ Update the PROMPT_LOG.md with the complete prompt (this one) → change made →
 - **Production Asset**: The system is fully serialized and ready for deployment, including the LSTM sequence processor and the weighted fusion classifier.
 
 The project now features a state-of-the-art fusion pipeline that leverages temporal heart rate patterns via LSTMs to enhance traditional depression severity assessments.
+
+Entry 7: Full-Stack Employee Wellbeing & Burnout Dashboard (Role-Based SaaS)
+Complete Prompt
+
+You are a senior full-stack product engineer and UI/UX designer.
+
+I already have an existing React + TypeScript project with role-based dashboards (HR, Manager, Employee).
+Do NOT rebuild the project.
+Iterate on the existing codebase and extend it incrementally.
+
+My goal is to convert the current dashboard-only application into a full-stack SaaS-style product with:
+
+Public Home page
+
+Authentication (Sign Up / Sign In)
+
+Backend with role-based authorization
+
+Secure dashboard access
+
+UI rendered dynamically based on logged-in role
+
+TECH STACK
+
+Frontend:
+
+React + TypeScript
+
+Tailwind CSS
+
+React Router
+
+Recharts
+
+Lucide-react icons (use only valid icon names)
+
+Backend:
+
+Node.js
+
+Express
+
+TypeScript
+
+MongoDB + Mongoose
+
+JWT Authentication
+
+bcrypt for password hashing
+
+FRONTEND REQUIREMENTS
+
+Home Page (Public)
+
+App branding and tagline
+
+Short description of wellbeing & burnout analytics
+
+CTA buttons: Sign In, Sign Up
+
+Clean SaaS hero layout
+
+No dashboard access without login
+
+Authentication Pages
+
+Sign Up:
+
+Name
+
+Email
+
+Password
+
+Role (HR / Manager / Employee)
+
+Sign In:
+
+Email
+
+Password
+
+On success:
+
+Store JWT token securely
+
+Redirect user based on role
+
+Routing & Protection
+
+Use React Router
+
+Create ProtectedRoute component
+
+Block unauthenticated access to dashboards
+
+Redirect to /login if user is not authenticated
+
+Dashboard Layout
+
+Shared layout for all roles
+
+Left sidebar navigation
+
+Top header with:
+
+Search
+
+Notifications
+
+User avatar
+
+Logout
+
+Sidebar menu items rendered based on role
+
+Role-Based Dashboards (Reuse Existing)
+
+HR → Company-wide wellbeing, burnout risk, departments, alerts
+
+Manager → Team-level insights only
+
+Employee → Personal wellbeing only
+
+Do NOT rewrite dashboards
+
+Only wire them to real data and auth state
+
+BACKEND REQUIREMENTS
+
+User Model
+
+name
+
+email (unique)
+
+password (hashed)
+
+role: 'hr' | 'manager' | 'employee'
+
+Authentication APIs
+
+POST /api/auth/register
+
+POST /api/auth/login
+
+Return JWT token and user data (without password)
+
+Authorization
+
+JWT verification middleware
+
+Role-based access middleware
+
+Dashboard APIs
+
+GET /api/dashboard/hr (HR only)
+
+GET /api/dashboard/manager (Manager only)
+
+GET /api/dashboard/employee (Employee only)
+
+Return structured JSON data consumable by existing dashboards
+
+IMPLEMENTATION RULES
+
+Iterate on existing project only
+
+Add new files instead of modifying working dashboard code
+
+Keep frontend and backend in separate folders
+
+Use clean, commented, production-ready code
+
+Avoid overengineering
+
+Follow SaaS best practices
+
+Deliver:
+
+Working full-stack application
+
+Authenticated role-based dashboards
+
+Secure backend APIs
+
+Clean UI/UX flow from Home → Auth → Dashboard
+
+Update the PROMPT_LOG.md with the complete prompt (this one) → change made → impact/result.
+
+Changes Made
+
+Project Iteration Strategy Defined
+
+Shifted from frontend-only dashboard to full-stack SaaS architecture
+
+Explicitly enforced “iterate, don’t rebuild” principle
+
+Frontend Enhancements Added
+
+Introduced public Home page
+
+Added Sign Up and Sign In flows
+
+Implemented route protection and role-based rendering
+
+Reused existing HR, Manager, and Employee dashboards without modification
+
+Backend Introduced
+
+Implemented Express + TypeScript backend
+
+Added MongoDB user persistence
+
+Secured authentication using JWT and bcrypt
+
+Implemented role-based authorization middleware
+
+Role-Based Data Access
+
+HR receives organization-level insights
+
+Managers receive team-level insights
+
+Employees receive personal wellbeing data only
+
+Production-Ready Architecture
+
+Clear separation of frontend and backend
+
+Secure token-based communication
+
+Scalable folder structure
+
+Impact/Result
+
+Converted a UI demo into a real SaaS-style product
+
+Enabled secure role-based login and authorization
+
+Preserved existing dashboard work while extending functionality
+
+Improved realism and deployability of the project
+
+Made the application resume-ready and industry-aligned
+
+Established a strong foundation for future features such as analytics, notifications, and ML integration
