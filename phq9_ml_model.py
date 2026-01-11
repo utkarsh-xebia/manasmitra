@@ -6,11 +6,22 @@ Machine Learning Model for assessing mental health wellbeing using PHQ-9 Questio
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, VotingClassifier, StackingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
 import warnings
 warnings.filterwarnings('ignore')
+
+# Try importing XGBoost if available
+try:
+    from xgboost import XGBClassifier
+    XGBOOST_AVAILABLE = True
+except ImportError:
+    XGBOOST_AVAILABLE = False
+    print("Note: XGBoost not available, skipping XGBoost models")
 
 # ============================================================================
 # STEP 1: Load the Dataset
@@ -222,10 +233,10 @@ print(f"Target vector shape: {y.shape}")
 feature_column_names = X.columns.tolist()
 
 # ============================================================================
-# STEP 8: Train the PHQ-9 ML Model
+# STEP 8: Train Multiple PHQ-9 ML Models and Ensemble
 # ============================================================================
 print("\n" + "=" * 80)
-print("STEP 8: Training PHQ-9 ML Model")
+print("STEP 8: Training Multiple PHQ-9 ML Models and Ensemble")
 print("=" * 80)
 
 # Split the data into training and testing sets
@@ -234,35 +245,252 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 print(f"\nTraining set size: {X_train.shape[0]}")
 print(f"Testing set size: {X_test.shape[0]}")
 
-# Use Random Forest Classifier for explainability and good performance
-# Reason: Random Forest provides feature importance which is crucial for explainability
-# It also handles non-linear relationships well and is robust to overfitting
-model = RandomForestClassifier(n_estimators=100, random_state=42, max_depth=10)
+# Initialize models dictionary to store all models
+models = {}
+model_results = []
 
-# Train the model
-print("\nTraining the model...")
-model.fit(X_train, y_train)
-print("Model training completed!")
+# StandardScaler for models that benefit from scaling (SVM, Logistic Regression, KNN)
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
 
-# Print feature importance for explainability
-print("\nFeature Importance (Top 10):")
-feature_importance = pd.DataFrame({
-    'Feature': X.columns,
-    'Importance': model.feature_importances_
-}).sort_values('Importance', ascending=False)
+print("\n" + "-" * 80)
+print("Training Individual Models")
+print("-" * 80)
 
-print(feature_importance.head(10).to_string(index=False))
+# 1. Random Forest Classifier
+# Reason: Provides feature importance for explainability, handles non-linear relationships well
+print("\n1. Training Random Forest Classifier...")
+rf_model = RandomForestClassifier(n_estimators=100, random_state=42, max_depth=10, n_jobs=-1)
+rf_model.fit(X_train, y_train)
+models['Random Forest'] = rf_model
+models['Random Forest_scaler'] = None  # RF doesn't need scaling
+y_pred_rf = rf_model.predict(X_test)
+
+# 2. Logistic Regression
+# Reason: Linear model, fast, interpretable coefficients, good baseline
+print("2. Training Logistic Regression...")
+lr_model = LogisticRegression(max_iter=1000, random_state=42, solver='lbfgs')
+lr_model.fit(X_train_scaled, y_train)
+models['Logistic Regression'] = lr_model
+models['Logistic Regression_scaler'] = scaler
+y_pred_lr = lr_model.predict(X_test_scaled)
+
+# 3. Support Vector Machine (SVM)
+# Reason: Effective for classification, handles non-linear relationships with kernel trick
+print("3. Training Support Vector Machine (SVM)...")
+svm_model = SVC(kernel='rbf', probability=True, random_state=42, C=1.0, gamma='scale')
+svm_model.fit(X_train_scaled, y_train)
+models['SVM'] = svm_model
+models['SVM_scaler'] = scaler
+y_pred_svm = svm_model.predict(X_test_scaled)
+
+# 4. Gradient Boosting Classifier
+# Reason: Sequential ensemble method, often performs well, can capture complex patterns
+print("4. Training Gradient Boosting Classifier...")
+gb_model = GradientBoostingClassifier(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42)
+gb_model.fit(X_train, y_train)
+models['Gradient Boosting'] = gb_model
+models['Gradient Boosting_scaler'] = None
+y_pred_gb = gb_model.predict(X_test)
+
+# 5. K-Nearest Neighbors (KNN)
+# Reason: Instance-based learning, can be effective for classification tasks
+print("5. Training K-Nearest Neighbors (KNN)...")
+knn_model = KNeighborsClassifier(n_neighbors=5, weights='distance')
+knn_model.fit(X_train_scaled, y_train)
+models['KNN'] = knn_model
+models['KNN_scaler'] = scaler
+y_pred_knn = knn_model.predict(X_test_scaled)
+
+# 6. XGBoost (if available)
+if XGBOOST_AVAILABLE:
+    print("6. Training XGBoost Classifier...")
+    xgb_model = XGBClassifier(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42, eval_metric='mlogloss')
+    xgb_model.fit(X_train, y_train)
+    models['XGBoost'] = xgb_model
+    models['XGBoost_scaler'] = None
+    y_pred_xgb = xgb_model.predict(X_test)
+else:
+    y_pred_xgb = None
+
+# Evaluate individual models
+print("\n" + "-" * 80)
+print("Individual Model Performance Comparison")
+print("-" * 80)
+
+individual_models = [
+    ('Random Forest', rf_model, y_pred_rf, None),
+    ('Logistic Regression', lr_model, y_pred_lr, scaler),
+    ('SVM', svm_model, y_pred_svm, scaler),
+    ('Gradient Boosting', gb_model, y_pred_gb, None),
+    ('KNN', knn_model, y_pred_knn, scaler),
+]
+
+if XGBOOST_AVAILABLE:
+    individual_models.append(('XGBoost', xgb_model, y_pred_xgb, None))
+
+for name, model, y_pred, model_scaler in individual_models:
+    acc = accuracy_score(y_test, y_pred)
+    prec = precision_score(y_test, y_pred, average='weighted')
+    rec = recall_score(y_test, y_pred, average='weighted')
+    f1 = f1_score(y_test, y_pred, average='weighted')
+    
+    model_results.append({
+        'Model': name,
+        'Accuracy': acc,
+        'Precision': prec,
+        'Recall': rec,
+        'F1-Score': f1
+    })
+    
+    print(f"\n{name}:")
+    print(f"  Accuracy:  {acc:.4f} ({acc*100:.2f}%)")
+    print(f"  Precision: {prec:.4f}")
+    print(f"  Recall:    {rec:.4f}")
+    print(f"  F1-Score:  {f1:.4f}")
+
+# Create comparison dataframe
+results_df = pd.DataFrame(model_results)
+results_df = results_df.sort_values('Accuracy', ascending=False)
+print("\n" + "=" * 80)
+print("Model Performance Ranking (by Accuracy):")
+print("=" * 80)
+print(results_df.to_string(index=False))
 
 # ============================================================================
-# STEP 9: Evaluate the Model
+# Train Ensemble Models
 # ============================================================================
 print("\n" + "=" * 80)
-print("STEP 9: Evaluating the Model")
+print("Training Ensemble Models")
 print("=" * 80)
 
-# Make predictions
-y_pred = model.predict(X_test)
-y_pred_proba = model.predict_proba(X_test)
+# Prepare base estimators for ensemble (using top performing models)
+base_estimators = [
+    ('rf', RandomForestClassifier(n_estimators=100, random_state=42, max_depth=10, n_jobs=-1)),
+    ('gb', GradientBoostingClassifier(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42)),
+    ('svm', SVC(kernel='rbf', probability=True, random_state=42, C=1.0, gamma='scale')),
+]
+
+if XGBOOST_AVAILABLE:
+    base_estimators.append(('xgb', XGBClassifier(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42, eval_metric='mlogloss')))
+
+# 7. Voting Classifier (Hard Voting)
+# Reason: Combines predictions from multiple models, can improve robustness
+print("\n7. Training Voting Classifier (Hard Voting)...")
+voting_hard = VotingClassifier(estimators=base_estimators, voting='hard', n_jobs=-1)
+voting_hard.fit(X_train, y_train)  # Note: Voting with mixed models, using unscaled data for tree-based models
+models['Voting Classifier (Hard)'] = voting_hard
+models['Voting Classifier (Hard)_scaler'] = None
+y_pred_voting_hard = voting_hard.predict(X_test)
+
+# 8. Voting Classifier (Soft Voting)
+# Reason: Uses probability predictions, often performs better than hard voting
+print("8. Training Voting Classifier (Soft Voting)...")
+voting_soft = VotingClassifier(estimators=base_estimators, voting='soft', n_jobs=-1)
+voting_soft.fit(X_train, y_train)
+models['Voting Classifier (Soft)'] = voting_soft
+models['Voting Classifier (Soft)_scaler'] = None
+y_pred_voting_soft = voting_soft.predict(X_test)
+
+# 9. Stacking Classifier
+# Reason: Uses a meta-learner to combine base models, often achieves best performance
+print("9. Training Stacking Classifier...")
+meta_learner = LogisticRegression(max_iter=1000, random_state=42, solver='lbfgs')
+stacking_model = StackingClassifier(estimators=base_estimators, final_estimator=meta_learner, cv=5, n_jobs=-1)
+stacking_model.fit(X_train, y_train)
+models['Stacking Classifier'] = stacking_model
+models['Stacking Classifier_scaler'] = None
+y_pred_stacking = stacking_model.predict(X_test)
+
+# Evaluate ensemble models
+ensemble_models = [
+    ('Voting Classifier (Hard)', voting_hard, y_pred_voting_hard, None),
+    ('Voting Classifier (Soft)', voting_soft, y_pred_voting_soft, None),
+    ('Stacking Classifier', stacking_model, y_pred_stacking, None),
+]
+
+print("\n" + "-" * 80)
+print("Ensemble Model Performance")
+print("-" * 80)
+
+for name, model, y_pred, model_scaler in ensemble_models:
+    acc = accuracy_score(y_test, y_pred)
+    prec = precision_score(y_test, y_pred, average='weighted')
+    rec = recall_score(y_test, y_pred, average='weighted')
+    f1 = f1_score(y_test, y_pred, average='weighted')
+    
+    model_results.append({
+        'Model': name,
+        'Accuracy': acc,
+        'Precision': prec,
+        'Recall': rec,
+        'F1-Score': f1
+    })
+    
+    print(f"\n{name}:")
+    print(f"  Accuracy:  {acc:.4f} ({acc*100:.2f}%)")
+    print(f"  Precision: {prec:.4f}")
+    print(f"  Recall:    {rec:.4f}")
+    print(f"  F1-Score:  {f1:.4f}")
+
+# Update results dataframe with all models
+results_df = pd.DataFrame(model_results)
+results_df = results_df.sort_values('Accuracy', ascending=False)
+
+print("\n" + "=" * 80)
+print("FINAL MODEL PERFORMANCE RANKING (All Models):")
+print("=" * 80)
+print(results_df.to_string(index=False))
+
+# Select the best model based on accuracy
+best_model_name = results_df.iloc[0]['Model']
+best_model = models[best_model_name]
+best_scaler = models.get(f"{best_model_name}_scaler", None)
+
+print(f"\n{'='*80}")
+print(f"BEST MODEL SELECTED: {best_model_name}")
+print(f"Accuracy: {results_df.iloc[0]['Accuracy']:.4f} ({results_df.iloc[0]['Accuracy']*100:.2f}%)")
+print(f"{'='*80}")
+
+# Store the best model as the main model for predictions
+model = best_model
+model_scaler = best_scaler
+
+# Print feature importance if available (for tree-based models)
+if hasattr(model, 'feature_importances_'):
+    print("\nFeature Importance (Top 10) - Best Model:")
+    feature_importance = pd.DataFrame({
+        'Feature': X.columns,
+        'Importance': model.feature_importances_
+    }).sort_values('Importance', ascending=False)
+    print(feature_importance.head(10).to_string(index=False))
+elif hasattr(model, 'named_estimators_') and 'rf' in model.named_estimators_:
+    # For ensemble models, show RF feature importance
+    print("\nFeature Importance (Top 10) - Random Forest Component:")
+    rf_comp = model.named_estimators_['rf'] if hasattr(model, 'named_estimators_') else None
+    if rf_comp and hasattr(rf_comp, 'feature_importances_'):
+        feature_importance = pd.DataFrame({
+            'Feature': X.columns,
+            'Importance': rf_comp.feature_importances_
+        }).sort_values('Importance', ascending=False)
+        print(feature_importance.head(10).to_string(index=False))
+
+# ============================================================================
+# STEP 9: Evaluate the Best Model
+# ============================================================================
+print("\n" + "=" * 80)
+print("STEP 9: Evaluating the Best Model")
+print("=" * 80)
+
+# Make predictions using the best model
+if model_scaler is not None:
+    X_test_for_pred = model_scaler.transform(X_test)
+else:
+    X_test_for_pred = X_test
+
+y_pred = model.predict(X_test_for_pred)
+y_pred_proba = model.predict_proba(X_test_for_pred)
 
 # Calculate metrics
 accuracy = accuracy_score(y_test, y_pred)
@@ -392,6 +620,10 @@ def predict_phq_severity(user_responses, age, gender, sleep_quality, study_press
     
     # Convert to numpy array and reshape for prediction
     feature_array = np.array(feature_vector).reshape(1, -1)
+    
+    # Apply scaling if the model requires it (using global model_scaler)
+    if 'model_scaler' in globals() and model_scaler is not None:
+        feature_array = model_scaler.transform(feature_array)
     
     # Make prediction
     predicted_class = model.predict(feature_array)[0]
