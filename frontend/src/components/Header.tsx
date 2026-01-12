@@ -110,9 +110,9 @@ export const Header: React.FC<HeaderProps> = ({ currentRole, onMenuClick }) => {
               onClick={() => setIsNotificationOpen(!isNotificationOpen)}
               className={`relative p-2 hover:bg-gray-100 rounded-lg transition-colors ${isNotificationOpen ? 'bg-gray-100' : ''}`}
             >
-              <Bell className="w-6 h-6 text-gray-600" />
+            <Bell className="w-6 h-6 text-gray-600" />
               {mockNotifications.some(n => n.unread) && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               )}
             </button>
 
@@ -139,7 +139,7 @@ export const Header: React.FC<HeaderProps> = ({ currentRole, onMenuClick }) => {
                 <div className="p-3 text-center border-t border-gray-100">
                   <button className="text-sm text-gray-600 hover:text-primary-600 font-medium transition-colors">
                     View all notifications
-                  </button>
+          </button>
                 </div>
               </div>
             )}
@@ -151,11 +151,11 @@ export const Header: React.FC<HeaderProps> = ({ currentRole, onMenuClick }) => {
               onClick={() => setIsProfileOpen(!isProfileOpen)}
               className={`flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors ${isProfileOpen ? 'bg-gray-100' : ''}`}
             >
-              <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-white" />
-              </div>
-              <span className="hidden md:block text-sm font-medium text-gray-700">{userName}</span>
-            </button>
+            <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
+              <User className="w-5 h-5 text-white" />
+            </div>
+            <span className="hidden md:block text-sm font-medium text-gray-700">{userName}</span>
+          </button>
 
             {isProfileOpen && (
               <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-2">

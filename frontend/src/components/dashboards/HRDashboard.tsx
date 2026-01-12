@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { KPICard } from '../KPICard';
 import { DonutChart } from '../charts/DonutChart';
 import { LineChart } from '../charts/LineChart';
@@ -8,23 +8,106 @@ import {
   ClipboardCheck,
   AlertTriangle,
   Search,
+  Loader2,
 } from 'lucide-react';
-import { hrMockData } from '../../data/mockData';
 import { useSearch } from '../../context/SearchContext';
+
+interface HRStats {
+  companyWellbeingScore: number;
+  wellbeingChange?: number;
+  wellbeingTrend?: 'up' | 'down' | 'neutral';
+  employeesAtRisk: number;
+  riskChange?: number;
+  riskTrend?: 'up' | 'down' | 'neutral';
+  activePrograms: number;
+  surveyResponseRate: number;
+  responseRateChange?: number;
+  responseRateTrend?: 'up' | 'down' | 'neutral';
+  burnoutDistribution: Array<{ name: string; value: number; color: string }>;
+  departmentHealth: Array<{ name: string; score: number; employees: number; atRisk: number }>;
+  monthlyTrend: Array<{ month: string; score: number }>;
+  alerts: Array<{ id: string; type: 'warning' | 'error' | 'info'; title: string; message: string; department?: string }>;
+}
 
 export const HRDashboard: React.FC = () => {
   const { searchQuery } = useSearch();
+  const [stats, setStats] = useState<HRStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('http://localhost:5000/api/admin/hr-stats', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch dashboard data');
+        }
+
+        const data = await response.json();
+        if (data.success) {
+          setStats(data.stats);
+        } else {
+          throw new Error(data.error || 'Failed to fetch dashboard data');
+        }
+      } catch (err: any) {
+        console.error('HR Dashboard fetch error:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+        <p className="text-gray-500 font-medium">Loading HR insights...</p>
+      </div>
+    );
+  }
+
+  if (error || !stats) {
+    return (
+      <div className="p-8 bg-red-50 border border-red-200 rounded-xl text-center">
+        <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+        <h2 className="text-xl font-bold text-red-900 mb-2">Error Loading Dashboard</h2>
+        <p className="text-red-700">{error || 'Something went wrong while fetching data.'}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   const {
     companyWellbeingScore,
+    wellbeingChange,
+    wellbeingTrend,
     employeesAtRisk,
+    riskChange,
+    riskTrend,
     activePrograms,
     surveyResponseRate,
+    responseRateChange,
+    responseRateTrend,
     burnoutDistribution,
     departmentHealth,
     monthlyTrend,
     alerts,
-  } = hrMockData;
+  } = stats;
 
   const filteredDepts = departmentHealth.filter((dept) =>
     dept.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -68,16 +151,16 @@ export const HRDashboard: React.FC = () => {
         <KPICard
           title="Company Wellbeing Score"
           value={companyWellbeingScore}
-          change={2}
-          trend="up"
+          change={wellbeingChange}
+          trend={wellbeingTrend}
           icon={Activity}
           color="primary"
         />
         <KPICard
           title="Employees at Risk"
           value={`${employeesAtRisk}%`}
-          change={-1}
-          trend="down"
+          change={riskChange}
+          trend={riskTrend}
           icon={AlertTriangle}
           color="red"
         />
@@ -90,8 +173,8 @@ export const HRDashboard: React.FC = () => {
         <KPICard
           title="Survey Response Rate"
           value={`${surveyResponseRate}%`}
-          change={3}
-          trend="up"
+          change={responseRateChange}
+          trend={responseRateTrend}
           icon={Users}
           color="green"
         />

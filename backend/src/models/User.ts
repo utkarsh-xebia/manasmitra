@@ -31,7 +31,7 @@ const UserSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: true,
+      required: false, // Allow HR to create stubs without passwords
     },
     role: {
       type: String,
@@ -58,6 +58,10 @@ const UserSchema = new Schema<IUser>(
       default: 'active',
     },
     isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    needsPasswordReset: {
       type: Boolean,
       default: false,
     },

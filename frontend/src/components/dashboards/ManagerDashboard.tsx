@@ -1,24 +1,103 @@
+import React, { useState, useEffect } from 'react';
 import { KPICard } from '../KPICard';
 import { BarChart } from '../charts/BarChart';
 import { LineChart } from '../charts/LineChart';
-import { Activity, Users, TrendingUp, AlertTriangle, Search } from 'lucide-react';
-import { managerMockData } from '../../data/mockData';
+import { Activity, Users, TrendingUp, AlertTriangle, Search, Loader2 } from 'lucide-react';
 import { useSearch } from '../../context/SearchContext';
+
+interface ManagerStats {
+  teamWellbeingScore: number;
+  wellbeingChange?: number;
+  wellbeingTrend?: 'up' | 'down' | 'neutral';
+  teamMembersAtRisk: number;
+  engagementScore: number;
+  engagementChange?: number;
+  engagementTrend?: 'up' | 'down' | 'neutral';
+  recentSurveyResult: string;
+  teamMembers: Array<{
+    id: string;
+    name: string;
+    wellbeingScore: number;
+    burnoutRisk: 'low' | 'medium' | 'high';
+    engagementScore: number;
+  }>;
+  workloadVsWellbeing: Array<{
+    month: string;
+    workload: number;
+    score: number;
+  }>;
+  insights: string[];
+}
 
 export const ManagerDashboard: React.FC = () => {
   const { searchQuery } = useSearch();
-  const { teamWellbeingScore, teamMembersAtRisk, engagementScore, recentSurveyResult, teamMembers, workloadVsWellbeing, insights } = managerMockData;
+  const [stats, setStats] = useState<ManagerStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('http://localhost:5000/api/admin/manager-stats', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch manager dashboard data');
+        }
+
+        const data = await response.json();
+        if (data.success) {
+          setStats(data.stats);
+        } else {
+          throw new Error(data.error || 'Failed to fetch manager dashboard data');
+        }
+      } catch (err: any) {
+        console.error('Manager Dashboard fetch error:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+        <p className="text-gray-500 font-medium">Loading team insights...</p>
+      </div>
+    );
+  }
+
+  if (error || !stats) {
+    return (
+      <div className="p-8 bg-red-50 border border-red-200 rounded-xl text-center">
+        <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+        <h2 className="text-xl font-bold text-red-900 mb-2">Error Loading Dashboard</h2>
+        <p className="text-red-700">{error || 'Something went wrong while fetching data.'}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  const { teamWellbeingScore, wellbeingChange, wellbeingTrend, teamMembersAtRisk, engagementScore, engagementChange, engagementTrend, recentSurveyResult, teamMembers, workloadVsWellbeing, insights } = stats;
 
   const filteredTeam = teamMembers.filter(member => 
     member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     member.burnoutRisk.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const riskColors: Record<string, string> = {
-    low: '#10b981',
-    medium: '#f59e0b',
-    high: '#ef4444',
-  };
 
   const teamMemberChartData = filteredTeam.map((member) => ({
     name: member.name.split(' ')[0], // First name only
@@ -28,7 +107,7 @@ export const ManagerDashboard: React.FC = () => {
 
   const chartData = workloadVsWellbeing.map(item => ({
     name: item.month,
-    workload: item.workload || 0,
+    workload: item.workload,
     score: item.score
   }));
 
@@ -53,8 +132,8 @@ export const ManagerDashboard: React.FC = () => {
         <KPICard
           title="Team Wellbeing Score"
           value={teamWellbeingScore}
-          change={1}
-          trend="up"
+          change={wellbeingChange}
+          trend={wellbeingTrend}
           icon={Activity}
           color="primary"
         />
@@ -67,8 +146,8 @@ export const ManagerDashboard: React.FC = () => {
         <KPICard
           title="Engagement Score"
           value={engagementScore}
-          change={2}
-          trend="up"
+          change={engagementChange}
+          trend={engagementTrend}
           icon={TrendingUp}
           color="green"
         />

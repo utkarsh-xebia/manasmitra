@@ -19,7 +19,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, currentRole }
     if (currentRole === 'hr') {
       items.push({ icon: Users, label: 'Departments', href: '/departments' });
     } else if (currentRole === 'manager') {
-      items.push({ icon: Users, label: 'Team', href: '#' });
+      items.push({ icon: Users, label: 'Team', href: '/team' });
     } else if (currentRole === 'employee') {
       items.push({ icon: ClipboardList, label: 'Questionnaire', href: '/questionnaire' });
       items.push({ icon: Users, label: 'Profile', href: '/profile' });
