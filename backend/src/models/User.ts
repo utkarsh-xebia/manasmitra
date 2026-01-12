@@ -9,6 +9,8 @@ export interface IUser extends Document {
   gender?: string;
   department?: string;
   reportingManager?: Types.ObjectId;
+  status: 'active' | 'inactive';
+  isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -49,6 +51,15 @@ const UserSchema = new Schema<IUser>(
     reportingManager: {
       type: Schema.Types.ObjectId,
       ref: 'User',
+    },
+    status: {
+      type: String,
+      enum: ['active', 'inactive'],
+      default: 'active',
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
     },
   },
   {

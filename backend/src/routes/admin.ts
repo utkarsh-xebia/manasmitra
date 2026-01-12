@@ -7,11 +7,11 @@ const router = Router();
 
 /**
  * GET /api/admin/employees
- * Get all employees (HR only)
+ * Get all employees (All authenticated roles have read access)
  */
-router.get('/employees', authenticate, requireRole(['hr']), async (req: Request, res: Response) => {
+router.get('/employees', authenticate, requireRole(['hr', 'manager', 'employee']), async (req: Request, res: Response) => {
   try {
-    const employees = await User.find({}, '-password')
+    const employees = await User.find({ isDeleted: { $ne: true } }, '-password')
       .populate('reportingManager', 'name email')
       .sort({ createdAt: -1 });
     res.json({ success: true, employees });
@@ -42,7 +42,7 @@ router.get('/managers', authenticate, requireRole(['hr']), async (req: Request, 
  */
 router.post('/employees', authenticate, requireRole(['hr']), async (req: Request, res: Response) => {
   try {
-    const { name, email, password, role, department, reportingManager } = req.body;
+    const { name, email, password, role, department, reportingManager, status } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -63,6 +63,7 @@ router.post('/employees', authenticate, requireRole(['hr']), async (req: Request
       role,
       department,
       reportingManager: reportingManager || undefined,
+      status: status || 'active',
     });
 
     await user.save();
@@ -85,11 +86,12 @@ router.post('/employees', authenticate, requireRole(['hr']), async (req: Request
 
 /**
  * GET /api/admin/departments
- * Get list of departments and employee counts (HR only)
+ * Get list of departments and employee counts (All authenticated roles have read access)
  */
-router.get('/departments', authenticate, requireRole(['hr']), async (req: Request, res: Response) => {
+router.get('/departments', authenticate, requireRole(['hr', 'manager', 'employee']), async (req: Request, res: Response) => {
   try {
     const departments = await User.aggregate([
+      { $match: { isDeleted: { $ne: true } } },
       {
         $group: {
           _id: "$department",
@@ -99,7 +101,8 @@ router.get('/departments', authenticate, requireRole(['hr']), async (req: Reques
               id: "$_id", 
               name: "$name", 
               email: "$email", 
-              role: "$role" 
+              role: "$role",
+              status: "$status"
             } 
           }
         }
@@ -118,6 +121,77 @@ router.get('/departments', authenticate, requireRole(['hr']), async (req: Reques
   } catch (error) {
     console.error('Error fetching departments:', error);
     res.status(500).json({ error: 'Failed to fetch departments' });
+  }
+});
+
+/**
+ * PATCH /api/admin/employees/:id
+ * Update employee details (HR only)
+ */
+router.patch('/employees/:id', authenticate, requireRole(['hr']), async (req: Request, res: Response) => {
+  try {
+    const { name, email, role, department, reportingManager, status } = req.body;
+    const employeeId = req.params.id;
+
+    const employee = await User.findById(employeeId);
+    if (!employee || employee.isDeleted) {
+      res.status(404).json({ error: 'Employee not found' });
+      return;
+    }
+
+    // Check if email is being changed and if it's already taken
+    if (email && email !== employee.email) {
+      const emailExists = await User.findOne({ email, _id: { $ne: employeeId } });
+      if (emailExists) {
+        res.status(400).json({ error: 'Email already in use' });
+        return;
+      }
+    }
+
+    const updatedEmployee = await User.findByIdAndUpdate(
+      employeeId,
+      {
+        $set: {
+          name: name || employee.name,
+          email: email || employee.email,
+          role: role || employee.role,
+          department: department || employee.department,
+          reportingManager: reportingManager === "" ? undefined : (reportingManager || employee.reportingManager),
+          status: status || employee.status,
+        }
+      },
+      { new: true, select: '-password' }
+    ).populate('reportingManager', 'name email');
+
+    res.json({ success: true, user: updatedEmployee });
+  } catch (error) {
+    console.error('Error updating employee:', error);
+    res.status(500).json({ error: 'Failed to update employee' });
+  }
+});
+
+/**
+ * DELETE /api/admin/employees/:id
+ * Soft delete employee (HR only)
+ */
+router.delete('/employees/:id', authenticate, requireRole(['hr']), async (req: Request, res: Response) => {
+  try {
+    const employeeId = req.params.id;
+
+    const employee = await User.findById(employeeId);
+    if (!employee || employee.isDeleted) {
+      res.status(404).json({ error: 'Employee not found' });
+      return;
+    }
+
+    employee.isDeleted = true;
+    employee.status = 'inactive';
+    await employee.save();
+
+    res.json({ success: true, message: 'Employee deleted successfully (soft delete)' });
+  } catch (error) {
+    console.error('Error deleting employee:', error);
+    res.status(500).json({ error: 'Failed to delete employee' });
   }
 });
 

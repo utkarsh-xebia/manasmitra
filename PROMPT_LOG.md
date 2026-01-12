@@ -1277,3 +1277,56 @@ replace the existing phq9_best_model.joblib with the updated version generated f
 - **Optimized Accuracy**: The dashboard is now powered by a model with significantly improved accuracy (94.16%), leading to more reliable mental health assessments.
 - **Strict Compatibility**: The deployed `.joblib` file is now guaranteed to be compatible with scikit-learn 1.7.2, eliminating potential "unpickling" errors in the backend inference service.
 - **Verified Predictions**: Integration tests during the training phase confirm that the model correctly identifies severity levels (e.g., "minimal") based on PHQ-9 responses and contextual user data.
+
+---
+
+## Entry 14: ML Engineer Assessment - PHQ-9 Model Design (Xebia Specification)
+
+### Complete Prompt
+
+Design the Machine learning model for assessing the mental health of xebians using PHQ 9 Questionnaire and following constraints:
+Since we are using the Python 3.10 use all the libraries which are compatible with Python 3.10 to train the model such as sklearn 1.7.2.
+Steps: Load dataset, clean with specific rules (trim, standardize, handle missing), encode PHQ-9 (0-3), encode categorical (Gender, Sleep, Pressure), train explainable models (Logistic Regression/Random Forest), evaluate with metrics (Accuracy, Precision, Recall, F1, Confusion Matrix), create microservice-style prediction function, and save the best model.
+
+### Changes Made
+
+1. **Model Architecture**: Designed a robust ML pipeline in `manasmitra/module/phq9_ml_model.py` specifically for Xebia's mental health assessment needs.
+2. **Data Processing**:
+   - Implemented strict cleaning rules: column trimming, case-insensitive standardization, and safe missing value handling (median/mode).
+   - Encoded the 9 PHQ questions using the standard 0-3 scale.
+   - Applied ordinal encoding to "Sleep Quality" and "Pressure" levels (Good to Worst).
+3. **Model Selection**: 
+   - Evaluated multiple classifiers (Logistic Regression, Random Forest, etc.) on the PHQ-9 dataset.
+   - **Logistic Regression** achieved the best accuracy (**94.16%**) and was selected for its high interpretability (explainable coefficients).
+4. **Performance Evaluation**: 
+   - Achieved balanced performance across all severity classes (Minimal to Severe).
+   - Generated a detailed classification report and confusion matrix for validation.
+5. **Microservice Readiness**: Developed a modular `predict_phq_severity()` function capable of processing raw user inputs and returning severity labels with confidence scores.
+6. **Deployment**: Exported the final model and all preprocessing components (encoders, scalers) into a single `phq9_best_model.joblib` file.
+
+### Impact/Result
+
+- **Scientific Reliability**: The model provides a data-driven approach to mental health assessment, grounded in the established PHQ-9 clinical standard.
+- **Explainable Insights**: By using Logistic Regression, the system can identify which factors (e.g., sleep quality, specific PHQ items) contribute most to a user's wellbeing score.
+- **Production-Ready**: The exported model package is fully compatible with the existing Node.js backend inference service, enabling real-time dashboard updates for Xebians.
+
+---
+
+## Entry 15: Scaler Integration and Standardization
+
+### Complete Prompt
+
+Pls create the scaler and save the scaler also in phq9_ml_model.py and update the file as well
+
+### Changes Made
+
+1. **Standardized Pipeline**: Updated `manasmitra/module/phq9_ml_model.py` to implement a consistent scaling pipeline. All candidate models (Logistic Regression, Random Forest) are now trained on data transformed by `StandardScaler`.
+2. **Unified Package**: Updated the `model_package` dictionary to always include the fitted `scaler`, ensuring that inference always uses the same scaling parameters as training.
+3. **Dedicated Scaler Export**: Added a step to save the scaler as a standalone file `manasmitra/models/phq9_scaler.joblib` for additional flexibility in future integrations.
+4. **Consistency in Inference**: Refactored the `predict_phq_severity()` function to automatically apply the saved scaler to all incoming user data, regardless of the best-performing model selected.
+
+### Impact/Result
+
+- **Inference Stability**: By hard-coding the scaler into the prediction flow, we eliminate "feature scale mismatch" bugs that could lead to incorrect severity classifications.
+- **Model Agnostic Scaling**: The pipeline now supports any scikit-learn model with a uniform preprocessing step, making it easier to swap or ensemble models in the future.
+- **Verified Deployment**: Confirmed that both the unified model package and the standalone scaler were successfully generated and saved to the `models/` directory.
