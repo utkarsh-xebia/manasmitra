@@ -184,7 +184,7 @@ X_test_scaled = scaler.transform(X_test)
 
 # Dictionary to hold models and their performances
 candidate_models = {
-    "Logistic Regression": LogisticRegression(max_iter=1000, multi_class='auto', solver='lbfgs'),
+    "Logistic Regression": LogisticRegression(max_iter=1000, solver='lbfgs'),
     "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42)
 }
 
@@ -332,6 +332,7 @@ model_package = {
     'model': best_model,
     'scaler': scaler,  # Always save the scaler for consistency
     'label_encoders': label_encoders,
+    'severity_encoder': label_encoders.get('PHQ_Severity'), # Explicitly save severity encoder
     'feature_cols': feature_cols,
     'phq_question_columns': phq_question_columns,
     'phq_encoding': phq_encoding,

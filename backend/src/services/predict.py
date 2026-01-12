@@ -17,9 +17,13 @@ def predict():
         
         model = model_package['model']
         scaler = model_package['scaler']
-        severity_encoder = model_package['severity_label_encoder']
-        phq_question_columns = model_package['phq_question_columns']
         label_encoders = model_package['label_encoders']
+        severity_encoder = model_package.get('severity_encoder', label_encoders.get('PHQ_Severity'))
+        phq_question_columns = model_package['phq_question_columns']
+        
+        # Check if severity_encoder exists
+        if severity_encoder is None:
+            raise KeyError("Severity encoder not found in model package")
 
         # Read input from stdin
         input_data = json.load(sys.stdin)
@@ -116,7 +120,7 @@ def predict():
         result = {
             'severityLabel': severity_label,
             'confidenceScore': confidence_score,
-            'totalScore': totalScore,
+            'totalScore': total_score,
             'stressLevel': stress_level,
             'moodScore': mood_score,
             'workLifeBalance': work_life_balance,
